@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODE 오답노트 및 취약 개념 분석기</title>
+<style>
+  :root{
+    --bg: #F5F2EB;
+    --panel: #FFFFFF;
+    --sidebar: #204234;
+    --sidebar-active: #2E5B47;
+    --primary: #204234;
+    --primary-dark: #16302510;
+    --primary-dark2: #142F24;
+    --text-main: #22302B;
+    --text-sub: #71796F;
+    --border: #E5DFD1;
+    --border-soft:#EFEAE0;
+    --accent-gold:#B08A4E;
+    --warn-red:#D6483F;
+    --warn-bg:#FCEBE9;
+    --ok-green:#2E7D5B;
+    --ok-bg:#E7F3EC;
+    --radius: 14px;
+    --shadow: 0 2px 10px rgba(32,66,52,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    background:var(--bg);
+    color:var(--text-main);
+  }
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  .app{
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* ===== 사이드바 ===== */
+  .sidebar{
+    width:236px;
+    flex-shrink:0;
+    background:var(--sidebar);
+    color:#F5F2EB;
+    padding:26px 16px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .sidebar .logo{
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:-0.3px;
+    padding:0 10px 20px 10px;
+    border-bottom:1px solid rgba(245,242,235,0.16);
+    margin-bottom:14px;
+    line-height:1.5;
+  }
+  .sidebar .logo .tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:800;
+    background:var(--accent-gold);
+    color:#20291f;
+    padding:2px 8px;
+    border-radius:6px;
+    margin-bottom:6px;
+    letter-spacing:0.5px;
+  }
+  .sidebar .logo small{
+    display:block;
+    font-size:12px;
+    font-weight:400;
+    color:#B9C7BE;
+    margin-top:2px;
+  }
+  .nav-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border:none;
+    background:transparent;
+    color:#CBD6CC;
+    border-radius:10px;
+    font-size:14.5px;
+    font-weight:600;
+    text-align:left;
+    transition:background .15s, color .15s;
+  }
+  .nav-btn:hover{background:rgba(245,242,235,0.08); color:#fff;}
+  .nav-btn.active{background:var(--sidebar-active); color:#fff;}
+  .nav-btn .icon{font-size:17px; width:20px; text-align:center;}
+
+  .sidebar-footer{
+    margin-top:auto;
+    font-size:11.5px;
+    color:#8CA093;
+    padding:10px;
+    border-top:1px solid rgba(245,242,235,0.14);
+  }
+
+  /* ===== 메인 영역 ===== */
+  .main{
+    flex:1;
+    padding:32px 40px;
+    max-width:1240px;
+  }
+  .page-header{
+    margin-bottom:24px;
+  }
+  .page-header h1{
+    font-size:23px;
+    margin:0 0 4px 0;
+    letter-spacing:-0.4px;
+    color:var(--primary);
+  }
+  .page-header p{
+    margin:0;
+    color:var(--text-sub);
+    font-size:14px;
+  }
+
+  .card{
+    background:var(--panel);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--border);
+    padding:22px;
+    margin-bottom:22px;
+  }
+  .card h2{
+    font-size:16px;
+    margin:0 0 16px 0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--primary);
+  }
+  .card h2 .badge{
+    font-size:11px;
+    background:#EAF1EC;
+    color:var(--primary);
+    padding:2px 8px;
+    border-radius:20px;
+    font-weight:700;
+  }
+  .card .card-desc{
+    font-size:12.5px;
+    color:var(--text-sub);
+    margin:-10px 0 16px 0;
+  }
+
+  .form-row{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .field label{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--text-sub);
+  }
+  .field input, .field select, .field textarea{
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    font-size:14px;
+    min-width:150px;
+    background:#FBFAF7;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .field textarea{resize:vertical; min-height:42px; font-family:inherit;}
+  .field input:focus, .field select:focus, .field textarea:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(32,66,52,0.14);
+  }
+
+  .btn{
+    padding:10px 18px;
+    border-radius:9px;
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    background:var(--primary);
+    color:#fff;
+    transition:background .15s, transform .1s;
+    white-space:nowrap;
+  }
+  .btn:hover{background:#16302A;}
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{background:#C9CFC9; cursor:not-allowed;}
+  .btn.secondary{
+    background:#EAF1EC;
+    color:var(--primary);
+  }
+  .btn.secondary:hover{background:#DEE9E1;}
+  .btn.gold{
+    background:var(--accent-gold);
+    color:#2A2214;
+  }
+  .btn.gold:hover{background:#9C7A44;}
+  .btn.danger-outline{
+    background:#fff;
+    color:var(--warn-red);
+    border:1px solid var(--warn-red);
+    padding:6px 12px;
+    font-size:12.5px;
+  }
+  .btn.danger-outline:hover{background:var(--warn-bg);}
+  .btn.danger-solid{
+    background:var(--warn-red);
+    color:#fff;
+  }
+  .btn.danger-solid:hover{background:#B93A32;}
+  .btn.small{padding:6px 12px; font-size:12.5px;}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+  }
+  thead th{
+    text-align:left;
+    color:var(--text-sub);
+    font-weight:700;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    padding:10px 12px;
+    border-bottom:2px solid var(--border);
+  }
+  tbody td{
+    padding:12px;
+    border-bottom:1px solid var(--border-soft);
+    vertical-align:middle;
+  }
+  tbody tr:hover{background:#FAF9F5;}
+  tbody tr:last-child td{border-bottom:none;}
+
+  .empty-state{
+    text-align:center;
+    padding:36px 20px;
+    color:var(--text-sub);
+    font-size:14px;
+  }
+  .empty-state .emoji{font-size:30px; display:block; margin-bottom:8px;}
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:4px 11px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:700;
+    background:#EAF1EC;
+    color:var(--primary);
+  }
+  .pill.cause{background:#F1ECE0; color:#7A5C2A;}
+
+  /* ===== 취약 단원 카드 ===== */
+  .weak-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .weak-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 16px;
+    background:#FBFAF6;
+    border:1px solid var(--border);
+    border-radius:11px;
+  }
+  .weak-item .rank{
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:var(--primary);
+    color:#fff;
+    font-size:12.5px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .weak-item .info{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:1;
+    min-width:0;
+  }
+  .weak-item .unit-name{
+    font-weight:800;
+    font-size:14.5px;
+    color:var(--text-main);
+  }
+  .weak-item .count-text{
+    font-size:12.5px;
+    color:var(--text-sub);
+    flex-shrink:0;
+  }
+  .warn-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    background:var(--warn-red);
+    color:#fff;
+    font-size:11.5px;
+    font-weight:800;
+    padding:4px 10px;
+    border-radius:20px;
+    flex-shrink:0;
+    animation:pulseWarn 1.8s ease-in-out infinite;
+    box-shadow:0 0 0 rgba(214,72,63,0.5);
+  }
+  @keyframes pulseWarn{
+    0%{ box-shadow:0 0 0 0 rgba(214,72,63,0.45); }
+    70%{ box-shadow:0 0 0 7px rgba(214,72,63,0); }
+    100%{ box-shadow:0 0 0 0 rgba(214,72,63,0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .warn-badge{ animation:none; }
+  }
+
+  /* ===== 진단 리포트 ===== */
+  .report-box{
+    background:#FBFAF6;
+    border:1.5px dashed var(--accent-gold);
+    border-radius:12px;
+    padding:18px 20px;
+    font-size:15px;
+    line-height:1.7;
+    color:var(--text-main);
+    min-height:60px;
+    white-space:pre-wrap;
+  }
+  .report-box.empty{
+    color:var(--text-sub);
+    font-size:13.5px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+  .report-meta{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+  }
+
+  /* ===== 데이터 관리 ===== */
+  .data-actions{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .data-actions .btn{ min-width:190px; }
+  .file-hidden{ display:none; }
+  .info-box{
+    background:#EAF1EC;
+    border:1px solid #D7E5DB;
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:13px;
+    color:#295142;
+    line-height:1.6;
+  }
+  .danger-zone{
+    border:1px solid #F2C9C4;
+    background:var(--warn-bg);
+    border-radius:12px;
+    padding:16px 18px;
+  }
+  .danger-zone h3{
+    margin:0 0 6px 0;
+    font-size:14px;
+    color:var(--warn-red);
+  }
+  .danger-zone p{
+    margin:0 0 12px 0;
+    font-size:12.5px;
+    color:#8A3E38;
+  }
+
+  .stat-mini-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:4px;
+  }
+  .stat-mini{
+    flex:1;
+    min-width:130px;
+    background:#FBFAF6;
+    border:1px solid var(--border);
+    border-radius:11px;
+    padding:14px 16px;
+  }
+  .stat-mini .label{font-size:12px; color:var(--text-sub); font-weight:700; margin-bottom:5px;}
+  .stat-mini .value{font-size:21px; font-weight:800; color:var(--primary);}
+
+  .toast{
+    position:fixed;
+    bottom:26px;
+    right:26px;
+    background:var(--primary);
+    color:#fff;
+    padding:13px 20px;
+    border-radius:10px;
+    font-size:13.5px;
+    font-weight:600;
+    box-shadow:0 6px 20px rgba(0,0,0,0.2);
+    opacity:0;
+    transform:translateY(10px);
+    transition:opacity .25s, transform .25s;
+    pointer-events:none;
+    z-index:999;
+    max-width:340px;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  select.student-filter{
+    min-width:200px;
+    font-weight:700;
+  }
+
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%; flex-direction:row; overflow-x:auto; padding:14px;}
+    .sidebar .logo{display:none;}
+    .sidebar-footer{display:none;}
+    .main{padding:20px;}
+    .stat-mini-row{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 사이드바 -->
+  <div class="sidebar">
+    <div class="logo">
+      <span class="tag">MODE</span><br>
+      오답노트 &amp; 취약개념 분석기
+      <small>진단 · 백업 · 리포트 통합 관리</small>
+    </div>
+    <button class="nav-btn active" data-view="record"><span class="icon">✏️</span>오답 기록 관리</button>
+    <button class="nav-btn" data-view="analysis"><span class="icon">🧠</span>취약 개념 분석 &amp; 진단</button>
+    <button class="nav-btn" data-view="data"><span class="icon">💾</span>데이터 관리 (백업/복원)</button>
+    <div class="sidebar-footer">© 2026 MODE 학습분석 시스템<br>내부용 · 무단 배포 금지</div>
+  </div>
+
+  <!-- 메인 -->
+  <div class="main">
+
+    <!-- ========== 1. 오답 기록 관리 ========== -->
+    <div class="view active" id="view-record">
+      <div class="page-header">
+        <h1>오답 기록 관리</h1>
+        <p>학생의 오답을 단원·원인별로 기록하면 취약 개념 분석에 자동으로 반영됩니다.</p>
+      </div>
+
+      <div class="card">
+        <h2>오답 새로 기록하기</h2>
+        <div class="form-row" style="margin-bottom:12px;">
+          <div class="field">
+            <label for="r-student">학생 이름</label>
+            <input type="text" id="r-student" placeholder="예: 김민준">
+          </div>
+          <div class="field">
+            <label for="r-subject">과목</label>
+            <select id="r-subject">
+              <option value="국어">국어</option>
+              <option value="영어">영어</option>
+              <option value="수학" selected>수학</option>
+              <option value="과학">과학</option>
+              <option value="사회">사회</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="r-unit">단원명</label>
+            <input type="text" id="r-unit" placeholder="예: 이차함수의 활용">
+          </div>
+          <div class="field">
+            <label for="r-cause">오답 원인</label>
+            <select id="r-cause">
+              <option value="개념 이해 부족">개념 이해 부족</option>
+              <option value="계산 실수">계산 실수</option>
+              <option value="조건 오독">조건 오독</option>
+              <option value="시간 부족">시간 부족</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="r-date">날짜</label>
+            <input type="date" id="r-date">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field" style="flex:1; min-width:240px;">
+            <label for="r-memo">메모 (선택)</label>
+            <textarea id="r-memo" rows="1" placeholder="예: 도함수 개념과 혼동함"></textarea>
+          </div>
+          <div class="field">
+            <button class="btn" id="btn-add-record">+ 오답 기록 추가</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>전체 오답 기록 <span class="badge" id="record-count-badge">0건</span></h2>
+        <table>
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>학생명</th>
+              <th>과목</th>
+              <th>단원명</th>
+              <th>오답 원인</th>
+              <th>메모</th>
+              <th style="width:80px;">관리</th>
+            </tr>
+          </thead>
+          <tbody id="record-table-body"></tbody>
+        </table>
+        <div class="empty-state" id="record-empty" style="display:none;">
+          <span class="emoji">📝</span>
+          아직 기록된 오답이 없습니다.<br>위 양식으로 첫 오답을 기록해 보세요.
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 2. 취약 개념 분석 & 진단 ========== -->
+    <div class="view" id="view-analysis">
+      <div class="page-header">
+        <h1>취약 개념 분석 &amp; 진단 리포트</h1>
+        <p>학생을 필터링해 취약 단원 TOP 3와 상담용 진단서를 확인하세요.</p>
+      </div>
+
+      <div class="card">
+        <h2>학생 필터</h2>
+        <div class="form-row">
+          <div class="field">
+            <label for="analysis-student">학생 선택</label>
+            <select id="analysis-student" class="student-filter">
+              <option value="__ALL__">전체 학생</option>
+            </select>
+          </div>
+          <div class="field">
+            <button class="btn gold" id="btn-print-report" disabled>🩺 상담용 진단서 출력</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>선택 범위 요약</h2>
+        <div class="stat-mini-row">
+          <div class="stat-mini">
+            <div class="label">총 오답 건수</div>
+            <div class="value" id="an-total-count">0</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">관련 단원 수</div>
+            <div class="value" id="an-unit-count">0</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">가장 흔한 오답 원인</div>
+            <div class="value" id="an-top-cause" style="font-size:15px;">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>취약 단원 TOP 3 <span class="badge" id="weak-badge">0건 분석</span></h2>
+        <p class="card-desc">오답 횟수가 3회 이상인 단원에는 <strong style="color:var(--warn-red);">[개념 재학습 필요]</strong> 경고 배지가 표시됩니다.</p>
+        <div class="weak-list" id="weak-list"></div>
+        <div class="empty-state" id="weak-empty" style="display:none;">
+          <span class="emoji">📊</span>
+          분석할 오답 데이터가 없습니다.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>상담용 진단서</h2>
+        <div class="report-meta" id="report-meta"></div>
+        <div class="report-box empty" id="report-box">
+          학생을 선택하고 [상담용 진단서 출력] 버튼을 누르면<br>여기에 진단 문장이 자동으로 생성됩니다.
+        </div>
+        <div style="margin-top:12px; display:flex; gap:10px;">
+          <button class="btn secondary small" id="btn-copy-report" style="display:none;">📋 문장 복사하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 3. 데이터 관리 (백업/복원) ========== -->
+    <div class="view" id="view-data">
+      <div class="page-header">
+        <h1>데이터 관리 (백업 &amp; 복원)</h1>
+        <p>누적된 오답 데이터를 CSV(엑셀) 파일로 안전하게 백업하고 복원할 수 있습니다.</p>
+      </div>
+
+      <div class="card">
+        <h2>현재 저장된 데이터</h2>
+        <div class="stat-mini-row">
+          <div class="stat-mini">
+            <div class="label">전체 오답 기록</div>
+            <div class="value" id="data-total-count">0건</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">등록된 학생 수</div>
+            <div class="value" id="data-student-count">0명</div>
+          </div>
+          <div class="stat-mini">
+            <div class="label">등록된 단원 수</div>
+            <div class="value" id="data-unit-count">0개</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>엑셀(CSV) 내보내기 · 불러오기</h2>
+        <p class="card-desc">내보내기 한 CSV 파일은 엑셀에서 바로 열람 가능하며, 동일한 형식의 CSV를 불러와 기존 데이터에 추가할 수 있습니다.</p>
+        <div class="data-actions" style="margin-bottom:14px;">
+          <button class="btn" id="btn-export-csv">⬇️ 엑셀(CSV)로 데이터 내보내기</button>
+          <button class="btn secondary" id="btn-import-csv-trigger">⬆️ CSV 파일 불러오기</button>
+          <input type="file" id="input-import-csv" class="file-hidden" accept=".csv,text/csv">
+        </div>
+        <div class="info-box">
+          ℹ️ CSV 파일 형식: <strong>학생명, 과목, 단원명, 오답원인, 날짜, 메모</strong> 순서의 열로 구성되어 있습니다.
+          불러오기 시 기존 데이터는 삭제되지 않고 새 기록으로 <strong>추가(병합)</strong>됩니다.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>전체 초기화</h2>
+        <div class="danger-zone">
+          <h3>⚠️ 위험 구역</h3>
+          <p>아래 버튼을 누르면 브라우저에 저장된 모든 오답 데이터가 즉시 삭제됩니다. 초기화 전에 반드시 CSV로 백업하세요.</p>
+          <button class="btn danger-solid" id="btn-reset-all">🗑️ 전체 데이터 초기화</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ===== 데이터 저장소 (메모리 내 저장) =====
+  var records = []; // {id, studentName, subject, unit, cause, date, memo}
+  var nextId = 1;
+
+  // 오답 원인별 진단 문구 매핑 ("문제 풀이 시 ___ 필요합니다" 의 ___ 부분)
+  var CAUSE_PHRASE = {
+    "개념 이해 부족": "개념 이해 부족으로 인한 오답을 줄이는 훈련이",
+    "계산 실수": "계산 실수를 줄이는 훈련이",
+    "조건 오독": "조건 오독을 줄이는 훈련이",
+    "시간 부족": "시간 부족으로 인한 실수를 줄이는 훈련이",
+    "기타": "반복되는 실수 유형을 점검하는 훈련이"
+  };
+
+  // ===== 유틸 =====
+  function uid(n){ return "rec-" + n; }
+
+  function showToast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2400);
+  }
+
+  function escapeHtml(str){
+    var div = document.createElement("div");
+    div.textContent = str == null ? "" : str;
+    return div.innerHTML;
+  }
+
+  function formatDate(d){
+    if(!d) return "-";
+    var parts = d.split("-");
+    if(parts.length !== 3) return d;
+    return parts[0] + "." + parts[1] + "." + parts[2];
+  }
+
+  function todayStr(){
+    var d = new Date();
+    var mm = String(d.getMonth()+1).padStart(2,"0");
+    var dd = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear() + "-" + mm + "-" + dd;
+  }
+
+  // ===== 네비게이션 =====
+  var navBtns = document.querySelectorAll(".nav-btn");
+  var views = document.querySelectorAll(".view");
+  navBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      navBtns.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      var target = btn.getAttribute("data-view");
+      views.forEach(function(v){ v.classList.remove("active"); });
+      document.getElementById("view-" + target).classList.add("active");
+      if(target === "analysis"){ refreshStudentFilter(); renderAnalysis(); }
+      if(target === "data"){ renderDataStats(); }
+    });
+  });
+
+  // ===================================================
+  // 1. 오답 기록 관리
+  // ===================================================
+  var dateInput = document.getElementById("r-date");
+  dateInput.value = todayStr();
+
+  document.getElementById("btn-add-record").addEventListener("click", function(){
+    var student = document.getElementById("r-student").value.trim();
+    var subject = document.getElementById("r-subject").value;
+    var unit = document.getElementById("r-unit").value.trim();
+    var cause = document.getElementById("r-cause").value;
+    var date = dateInput.value;
+    var memo = document.getElementById("r-memo").value.trim();
+
+    if(!student){
+      showToast("⚠️ 학생 이름을 입력해 주세요.");
+      document.getElementById("r-student").focus();
+      return;
+    }
+    if(!unit){
+      showToast("⚠️ 단원명을 입력해 주세요.");
+      document.getElementById("r-unit").focus();
+      return;
+    }
+    if(!date){
+      showToast("⚠️ 날짜를 선택해 주세요.");
+      return;
+    }
+
+    records.push({
+      id: uid(nextId++),
+      studentName: student,
+      subject: subject,
+      unit: unit,
+      cause: cause,
+      date: date,
+      memo: memo
+    });
+
+    document.getElementById("r-student").value = "";
+    document.getElementById("r-unit").value = "";
+    document.getElementById("r-memo").value = "";
+    document.getElementById("r-student").focus();
+
+    renderRecordTable();
+    refreshStudentFilter();
+    showToast("✅ 오답이 기록되었습니다.");
+  });
+
+  function deleteRecord(id){
+    var rec = records.find(function(r){ return r.id === id; });
+    if(!rec) return;
+    if(!confirm(rec.studentName + " 학생의 [" + rec.unit + "] 오답 기록을 삭제하시겠습니까?")) return;
+    records = records.filter(function(r){ return r.id !== id; });
+    renderRecordTable();
+    refreshStudentFilter();
+    renderAnalysis();
+    showToast("🗑️ 오답 기록이 삭제되었습니다.");
+  }
+  window.__deleteRecord = deleteRecord;
+
+  function renderRecordTable(){
+    var body = document.getElementById("record-table-body");
+    var empty = document.getElementById("record-empty");
+    var badge = document.getElementById("record-count-badge");
+    badge.textContent = records.length + "건";
+
+    if(records.length === 0){
+      body.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    var sorted = records.slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
+
+    body.innerHTML = sorted.map(function(r){
+      return "<tr>" +
+        "<td>" + formatDate(r.date) + "</td>" +
+        "<td><strong>" + escapeHtml(r.studentName) + "</strong></td>" +
+        "<td>" + escapeHtml(r.subject) + "</td>" +
+        "<td>" + escapeHtml(r.unit) + "</td>" +
+        "<td><span class='pill cause'>" + escapeHtml(r.cause) + "</span></td>" +
+        "<td style='color:var(--text-sub); font-size:12.5px;'>" + escapeHtml(r.memo || "-") + "</td>" +
+        "<td><button class='btn danger-outline' onclick='window.__deleteRecord(\"" + r.id + "\")'>삭제</button></td>" +
+        "</tr>";
+    }).join("");
+  }
+
+  // ===================================================
+  // 2. 취약 개념 분석 & 진단 리포트
+  // ===================================================
+  var analysisSelect = document.getElementById("analysis-student");
+  var printBtn = document.getElementById("btn-print-report");
+
+  function refreshStudentFilter(){
+    var prevVal = analysisSelect.value;
+    var names = [];
+    records.forEach(function(r){
+      if(names.indexOf(r.studentName) === -1) names.push(r.studentName);
+    });
+    names.sort(function(a,b){ return a.localeCompare(b, "ko"); });
+
+    var html = "<option value='__ALL__'>전체 학생</option>";
+    html += names.map(function(n){
+      return "<option value='" + escapeHtml(n) + "'>" + escapeHtml(n) + "</option>";
+    }).join("");
+    analysisSelect.innerHTML = html;
+
+    if(names.indexOf(prevVal) !== -1 || prevVal === "__ALL__"){
+      analysisSelect.value = prevVal;
+    } else {
+      analysisSelect.value = "__ALL__";
+    }
+  }
+
+  analysisSelect.addEventListener("change", function(){
+    printBtn.disabled = (analysisSelect.value === "__ALL__");
+    resetReportBox();
+    renderAnalysis();
+  });
+
+  function getFilteredRecords(){
+    var val = analysisSelect.value;
+    if(val === "__ALL__") return records.slice();
+    return records.filter(function(r){ return r.studentName === val; });
+  }
+
+  function groupCount(list, key){
+    var map = {};
+    list.forEach(function(item){
+      var k = item[key];
+      map[k] = (map[k] || 0) + 1;
+    });
+    return map;
+  }
+
+  function topEntries(map, n){
+    return Object.keys(map)
+      .map(function(k){ return { key: k, count: map[k] }; })
+      .sort(function(a,b){ return b.count - a.count; })
+      .slice(0, n);
+  }
+
+  function renderAnalysis(){
+    var filtered = getFilteredRecords();
+
+    // 요약 통계
+    document.getElementById("an-total-count").textContent = filtered.length;
+    var unitMap = groupCount(filtered, "unit");
+    document.getElementById("an-unit-count").textContent = Object.keys(unitMap).length;
+
+    var causeMap = groupCount(filtered, "cause");
+    var topCauseArr = topEntries(causeMap, 1);
+    document.getElementById("an-top-cause").textContent = topCauseArr.length ? topCauseArr[0].key + " (" + topCauseArr[0].count + "회)" : "-";
+
+    // 취약 단원 TOP 3
+    var weakList = document.getElementById("weak-list");
+    var weakEmpty = document.getElementById("weak-empty");
+    var weakBadge = document.getElementById("weak-badge");
+    weakBadge.textContent = filtered.length + "건 분석";
+
+    if(filtered.length === 0){
+      weakList.innerHTML = "";
+      weakEmpty.style.display = "block";
+      return;
+    }
+    weakEmpty.style.display = "none";
+
+    var top3 = topEntries(unitMap, 3);
+    weakList.innerHTML = top3.map(function(item, idx){
+      var isWarn = item.count >= 3;
+      return "<div class='weak-item'>" +
+        "<div class='info'>" +
+          "<div class='rank'>" + (idx+1) + "</div>" +
+          "<div class='unit-name'>" + escapeHtml(item.key) + "</div>" +
+          (isWarn ? "<span class='warn-badge'>⚠ 개념 재학습 필요</span>" : "") +
+        "</div>" +
+        "<div class='count-text'>오답 <strong>" + item.count + "회</strong></div>" +
+        "</div>";
+    }).join("");
+  }
+
+  // ---- 진단서 출력 ----
+  function resetReportBox(){
+    var box = document.getElementById("report-box");
+    box.classList.add("empty");
+    box.textContent = "학생을 선택하고 [상담용 진단서 출력] 버튼을 누르면\n여기에 진단 문장이 자동으로 생성됩니다.";
+    document.getElementById("report-meta").innerHTML = "";
+    document.getElementById("btn-copy-report").style.display = "none";
+  }
+
+  printBtn.addEventListener("click", function(){
+    var studentName = analysisSelect.value;
+    if(studentName === "__ALL__"){
+      showToast("⚠️ 특정 학생을 선택한 후 이용해 주세요.");
+      return;
+    }
+    var filtered = records.filter(function(r){ return r.studentName === studentName; });
+    if(filtered.length === 0){
+      showToast("⚠️ 해당 학생의 오답 데이터가 없습니다.");
+      return;
+    }
+
+    var unitMap = groupCount(filtered, "unit");
+    var causeMap = groupCount(filtered, "cause");
+    var topUnit = topEntries(unitMap, 1)[0];
+    var topCause = topEntries(causeMap, 1)[0];
+    var causePhrase = CAUSE_PHRASE[topCause.key] || (topCause.key + "을(를) 개선하는 훈련이");
+
+    var sentence = "이 학생은 현재 " + topUnit.key + " 단원의 개념 보완이 시급하며, 문제 풀이 시 " +
+      causePhrase + " 필요합니다.";
+
+    var box = document.getElementById("report-box");
+    box.classList.remove("empty");
+    box.textContent = sentence;
+
+    document.getElementById("report-meta").innerHTML =
+      "<span class='pill'>대상: " + escapeHtml(studentName) + "</span>" +
+      "<span class='pill'>최다 취약 단원: " + escapeHtml(topUnit.key) + " (" + topUnit.count + "회)</span>" +
+      "<span class='pill cause'>최다 오답 원인: " + escapeHtml(topCause.key) + " (" + topCause.count + "회)</span>";
+
+    document.getElementById("btn-copy-report").style.display = "inline-block";
+    showToast("🩺 " + studentName + " 학생의 진단서가 생성되었습니다.");
+  });
+
+  document.getElementById("btn-copy-report").addEventListener("click", function(){
+    var text = document.getElementById("report-box").textContent;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast("📋 진단 문장이 클립보드에 복사되었습니다.");
+      }).catch(function(){
+        showToast("⚠️ 복사에 실패했습니다. 텍스트를 직접 선택해 복사해 주세요.");
+      });
+    } else {
+      showToast("⚠️ 이 브라우저에서는 자동 복사가 지원되지 않습니다.");
+    }
+  });
+
+  // ===================================================
+  // 3. 데이터 관리 (백업 / 복원)
+  // ===================================================
+  function renderDataStats(){
+    document.getElementById("data-total-count").textContent = records.length + "건";
+    var studentSet = {};
+    var unitSet = {};
+    records.forEach(function(r){
+      studentSet[r.studentName] = true;
+      unitSet[r.unit] = true;
+    });
+    document.getElementById("data-student-count").textContent = Object.keys(studentSet).length + "명";
+    document.getElementById("data-unit-count").textContent = Object.keys(unitSet).length + "개";
+  }
+
+  // ---- CSV 이스케이프 / 파싱 ----
+  function csvEscape(val){
+    var str = val == null ? "" : String(val);
+    if(/[",\n]/.test(str)){
+      str = '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  }
+
+  function buildCSV(list){
+    var header = ["학생명","과목","단원명","오답원인","날짜","메모"];
+    var lines = [header.join(",")];
+    list.forEach(function(r){
+      lines.push([
+        csvEscape(r.studentName),
+        csvEscape(r.subject),
+        csvEscape(r.unit),
+        csvEscape(r.cause),
+        csvEscape(r.date),
+        csvEscape(r.memo)
+      ].join(","));
+    });
+    return lines.join("\r\n");
+  }
+
+  function parseCSV(text){
+    var rows = [];
+    var field = "", row = [], inQuotes = false;
+    text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    for(var i = 0; i < text.length; i++){
+      var c = text[i];
+      if(inQuotes){
+        if(c === '"'){
+          if(text[i+1] === '"'){ field += '"'; i++; }
+          else { inQuotes = false; }
+        } else {
+          field += c;
+        }
+      } else {
+        if(c === '"'){ inQuotes = true; }
+        else if(c === ','){ row.push(field); field = ""; }
+        else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; }
+        else { field += c; }
+      }
+    }
+    if(field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  document.getElementById("btn-export-csv").addEventListener("click", function(){
+    if(records.length === 0){
+      showToast("⚠️ 내보낼 데이터가 없습니다.");
+      return;
+    }
+    var csv = buildCSV(records);
+    var blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var d = new Date();
+    var stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0");
+    a.href = url;
+    a.download = "MODE_오답노트_백업_" + stamp + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("⬇️ CSV 파일로 내보내기가 완료되었습니다.");
+  });
+
+  var importInput = document.getElementById("input-import-csv");
+  document.getElementById("btn-import-csv-trigger").addEventListener("click", function(){
+    importInput.value = "";
+    importInput.click();
+  });
+
+  importInput.addEventListener("change", function(e){
+    var file = e.target.files && e.target.files[0];
+    if(!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      var text = evt.target.result;
+      if(text.charCodeAt(0) === 0xFEFF){ text = text.slice(1); }
+
+      var rows = parseCSV(text);
+      if(rows.length === 0){
+        showToast("⚠️ 불러올 데이터가 없습니다.");
+        return;
+      }
+
+      // 첫 줄이 헤더인지 판별
+      var startIdx = 0;
+      var firstRow = rows[0];
+      if(firstRow[0] && firstRow[0].indexOf("학생") !== -1){
+        startIdx = 1;
+      }
+
+      var imported = [];
+      for(var i = startIdx; i < rows.length; i++){
+        var row = rows[i];
+        if(!row || row.join("").trim() === "") continue;
+        if(!row[0] || !row[2]) continue; // 학생명, 단원명 필수
+
+        imported.push({
+          id: uid(nextId++),
+          studentName: (row[0] || "").trim(),
+          subject: (row[1] || "기타").trim() || "기타",
+          unit: (row[2] || "").trim(),
+          cause: (row[3] || "기타").trim() || "기타",
+          date: (row[4] || todayStr()).trim() || todayStr(),
+          memo: (row[5] || "").trim()
+        });
+      }
+
+      if(imported.length === 0){
+        showToast("⚠️ 유효한 데이터 행을 찾지 못했습니다. CSV 형식을 확인해 주세요.");
+        return;
+      }
+
+      if(!confirm(imported.length + "건의 오답 데이터를 불러왔습니다.\n기존 데이터에 추가하시겠습니까?")) return;
+
+      records = records.concat(imported);
+      renderRecordTable();
+      refreshStudentFilter();
+      renderAnalysis();
+      renderDataStats();
+      showToast("✅ " + imported.length + "건의 데이터를 복원(추가)했습니다.");
+    };
+    reader.onerror = function(){
+      showToast("⚠️ 파일을 읽는 중 오류가 발생했습니다.");
+    };
+    reader.readAsText(file, "UTF-8");
+  });
+
+  document.getElementById("btn-reset-all").addEventListener("click", function(){
+    if(records.length === 0){
+      showToast("초기화할 데이터가 없습니다.");
+      return;
+    }
+    if(!confirm("정말로 전체 오답 데이터 " + records.length + "건을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다. (사전에 CSV 백업을 권장합니다)")) return;
+    records = [];
+    renderRecordTable();
+    refreshStudentFilter();
+    renderAnalysis();
+    renderDataStats();
+    resetReportBox();
+    showToast("🗑️ 전체 데이터가 초기화되었습니다.");
+  });
+
+  // ===== 초기 렌더링 =====
+  renderRecordTable();
+  refreshStudentFilter();
+  renderAnalysis();
+  renderDataStats();
+
+})();
+</script>
+</body>
+</html>
